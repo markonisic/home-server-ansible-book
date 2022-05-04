@@ -1,0 +1,106 @@
+- name: "Server configuration"
+  hosts: "all"
+
+  vars_files:
+    - "../manifest.yml"
+  tasks:
+
+    - name: "Configure hostname"
+      ansible.builtin.hostname:
+        name: "{{system.hostname}}"
+      become: true
+
+    - name: "Configure timezone"
+      community.general.timezone:
+        name: "{{system.timezone}}"
+      become: true
+
+    - name: "Install Chrony"
+      ansible.builtin.package:
+        name: "chrony"
+        state: "present"
+      become: true
+
+    - name: "Manage Chrony"
+      ansible.builtin.service:
+        name: "chronyd.service"
+        state: "started"
+        enabled: true
+      become: true
+
+    - name: "Install tuned"
+      ansible.builtin.package:
+        name: "tuned"
+        state: "present"
+      become: true
+
+    - name: "Manage tuned service"
+      ansible.builtin.service:
+        name: "tuned.service"
+        state: "started"
+        enabled: "true"
+      become: true
+
+    - name: "Install avahi"
+      ansible.builtin.package:
+        name:
+          - "avahi-daemon"
+          - "libnss-mdns"
+        state: "present"
+      become: true
+    
+    - name: "Manage avahi"
+      ansible.builtin.service:
+        name: "avahi-daemon.service"
+        state: "started"
+        enabled: true
+      become: true
+
+    - name: "Firewall rule avahi"
+      ansible.builtin.iptables:
+        chain: INPUT
+        protocol: udp
+        destination_port: 5353
+        ctstate: NEW
+        jump: ACCEPT
+        comment: Avahi rule
+      become: true
+
+    - name: "Install cockpit"
+      ansible.builtin.package:
+        name:
+          - "cockpit"
+        state: "present"
+      become: true
+    
+    - name: "Manage cockpit service"
+      ansible.builtin.service:
+        name: "cockpit.socket"
+        state: "started"
+      become: true
+
+    - name: "Cockpit firewall rule"
+      ansible.builtin.iptables:
+        chain: INPUT
+        protocol: tcp
+        destination_port: 9090
+        ctstate: NEW
+        jump: ACCEPT
+        comment: Cockpit allow rule
+      become: true
+
+    - name: "Install KVM & libvirt"
+      ansible.builtin.package:
+        name:
+          - "libvirt-daemon"
+          - "libvirt-clients"
+          - "libvirt-daemon-config-network"
+          - "qemu-kvm"
+        state: "present"
+      become: true
+
+    - name: "Install cockpit machines"
+      ansible.builtin.package:
+        name: "cockpit-machines"
+        state: "present"
+      become: true
